@@ -85,6 +85,7 @@ func parseFile(inputFile string) error {
 		return err
 	}
 
+	log.Println("Done")
 	return nil
 }
 
@@ -114,7 +115,12 @@ func handleRow(rowData []string, rowNumber int) error {
 		return err
 	}
 
-	err = a.createPng()
+	img, err := a.buildImage()
+	if err != nil {
+		return err
+	}
+
+	err = a.persistToFile(img)
 	if err != nil {
 		return err
 	}
@@ -199,7 +205,7 @@ func (a *asset) encodingPattern() string {
 	return strings.Join(values, "")
 }
 
-func (a *asset) createPng() error {
+func (a *asset) buildImage() (*image.NRGBA, error) {
 	encoding := a.encodingPattern()
 
 	// Create a image of the given width and height.
@@ -212,7 +218,7 @@ func (a *asset) createPng() error {
 		}
 
 		// Bits 8-55 represent all six characters to be displayed
-		for x := offset; x < 55; x++ {
+		for x := offset; x <= 55; x++ {
 			if string(encoding[x-offset]) == "1" {
 				img.Set(x, y, color.Black)
 			} else {
@@ -226,7 +232,16 @@ func (a *asset) createPng() error {
 		}
 	}
 
-	f, err := os.Create(fmt.Sprintf("outputs/%s.png", a.idStr()))
+	return img, nil
+}
+
+func (a *asset) persistToFile(img *image.NRGBA) error {
+	err := os.MkdirAll(outputDir(), os.ModePerm)
+	if err != nil {
+		return err
+	}
+
+	f, err := os.Create(fmt.Sprintf("%s/%s.png", outputDir(), a.idStr()))
 	if err != nil {
 		return err
 	}
@@ -243,16 +258,24 @@ func (a *asset) createPng() error {
 	return nil
 }
 
+func outputDir() string {
+	if flag.Lookup("test.v") == nil {
+		return "outputs"
+	}
+
+	return "test_outputs"
+}
+
 func encodingForDigit(digit int) (string, error) {
 	switch digit {
 	case 0:
 		return "01110111", nil
 	case 1:
-		return "01000100", nil
+		return "01000010", nil
 	case 2:
 		return "10110101", nil
 	case 3:
-		return "11010001", nil
+		return "11010110", nil
 	case 4:
 		return "11000011", nil
 	case 5:

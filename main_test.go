@@ -1,6 +1,7 @@
 package main
 
 import (
+	"image"
 	"testing"
 )
 
@@ -12,9 +13,6 @@ func Test_e2e_Success(t *testing.T) {
 	}
 }
 
-// func Test_e2e_Success(t *testing.T) {
-// 	Test image creation
-// }
 func Test_e2e_WrongLengthInput(t *testing.T) {
 	err := parseFile("inputs/wrong_length_input.txt")
 
@@ -35,7 +33,7 @@ func Test_e2e_NotIntegerInput(t *testing.T) {
 	}
 }
 
-func Test_asset_createPng_Success(t *testing.T) {
+func Test_asset_buildImage_Success(t *testing.T) {
 	a := asset{
 		id:       []int{1, 3, 3, 7},
 		checksum: []int{5, 6},
@@ -49,10 +47,44 @@ func Test_asset_createPng_Success(t *testing.T) {
 		},
 	}
 
-	err := a.createPng()
+	img, err := a.buildImage()
 
 	if err != nil {
 		t.Errorf("Expected no error, Got: %s", err)
+	}
+
+	// https://golang.org/src/image/geom.go?s=6341:6380#L256
+	if img.Rect != image.Rect(0, 0, 256, 1) {
+		t.Errorf("Expected rectangle with x0=0, y0=0, x1=256, y1=0. Got: %v", img.Rect)
+	}
+
+	if img.Stride != 1024 {
+		t.Errorf("Expected img.Stride to be 1024. Got: %d", img.Stride)
+	}
+
+	if len(img.Pix) != 1024 {
+		t.Errorf("Expected len(img.Pix) to be 1024. Got: %d", len(img.Pix))
+	}
+
+	// Test offset
+	for i := 0; i < 8*4; i++ {
+		if img.Pix[i] != 255 {
+			t.Errorf("Offset expected to be 255. Got: %d at index %d", img.Pix[i], i)
+		}
+	}
+
+	// Test core
+	for i := 8 * 4; i < 55*4; i++ {
+		if img.Pix[i] != expectedPix[i-(8*4)] {
+			t.Errorf("Core space after expected to be %d. Got: %d at index %d", expectedPix[i-(8*4)], img.Pix[i], i)
+		}
+	}
+
+	// Test reserved after
+	for i := 56 * 4; i <= 255*4; i++ {
+		if img.Pix[i] != 255 {
+			t.Errorf("Reserved space after expected to be 255. Got: %d at index %d", img.Pix[i], i)
+		}
 	}
 }
 
@@ -185,3 +217,5 @@ func encodingEq(a, b map[int]string) bool {
 
 	return true
 }
+
+var expectedPix = []uint8{0, 0, 0, 255, 0, 0, 0, 255, 255, 255, 255, 255, 0, 0, 0, 255, 255, 255, 255, 255, 0, 0, 0, 255, 255, 255, 255, 255, 0, 0, 0, 255, 0, 0, 0, 255, 0, 0, 0, 255, 0, 0, 0, 255, 0, 0, 0, 255, 255, 255, 255, 255, 0, 0, 0, 255, 255, 255, 255, 255, 0, 0, 0, 255, 255, 255, 255, 255, 0, 0, 0, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 0, 0, 0, 255, 255, 255, 255, 255, 255, 255, 255, 255, 0, 0, 0, 255, 0, 0, 0, 255, 255, 255, 255, 255, 0, 0, 0, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 0, 0, 0, 255, 0, 0, 0, 255, 0, 0, 0, 255, 255, 255, 255, 255, 0, 0, 0, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 0, 0, 0, 255, 255, 255, 255, 255, 0, 0, 0, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 0, 0, 0, 255, 0, 0, 0, 255}

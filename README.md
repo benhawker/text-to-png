@@ -21,6 +21,18 @@ The output from running the program against `inputs/test_input.txt` is provided 
 
 A binary `./test-to-png` built with `go1.14.2 darwin/amd64` is also committed. No external dependencies outside the Go standard library are required.
 
+### Potential Improvements
+
+- e2e testing of file creation
+
+- Write to tmp file(s) when running tests enabling the removal of `outputDir()` and it's call to `flag.Lookup("test.v")`.
+
+- ...or if we refactor to allow us to pass in something that meets the https://golang.org/pkg/io/#Writer interface we can more easily test output without writing to a file.
+
+- Consider storing data on the asset as `[]byte`. Program can use https://golang.org/pkg/encoding/binary/ to convert to `int` where required (checksum calculation) and string conversion with `string([]byte{65, 66, 67})`
+
+- This would also allow us to improve the fn `setChecksum()` and the check against it's length which limits the flexibility.
+
  
 ### Task
 
@@ -69,15 +81,16 @@ I believe this should result in the following encodings:
 x 0123 4 567
 ------------
 0 0111 0 111
-1 0100 0 100
+1 0100 0 010
 2 1011 0 101
-3 1101 0 001
+3 1101 0 110
 4 1100 0 011
 5 1101 0 101
 6 1111 0 101
 7 0100 0 110
 8 1111 0 111
 9 1101 0 111
+
 ```
 
 **3.**  For each pattern of bits, generate a PNG ﬁle that encodes this pattern, and output it to disk with a ﬁle name of the original asset ID.
